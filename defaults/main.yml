@@ -1,2 +1,8 @@
 ---
 # defaults file for system-file-hardening
+
+umask_mode: umask 007 
+# 022 = Owner RWX, else R.
+# 002 = Owner+Group RWX, else R.
+# 007 = Owner+Group RWX, else no access. (DEFAULT)
+# 077 = Owner RWX, else no access.

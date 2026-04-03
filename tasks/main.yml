@@ -3,6 +3,7 @@
 - name: Secure Boot and Cron directories
   ansible.builtin.file:
     path: "{{ item }}"
+    recurse: yes
     mode: '700'
   loop:
     - /boot
@@ -34,6 +35,28 @@
   loop:
     - /etc/shadow
     - /etc/gshadow
+
+- name: Secure Home Dirs
+  ansible.builtin.file:
+    path: "{{ item }}"
+    recurse: yes
+    mode: '600'
+  loop:
+    - /home
+
+- name: Ensure TMP Sticky Bit Enabled
+  ansible.builtin.file:
+    path: "{{ item }}"
+    mode: '1777'
+  loop:
+    - /tmp
+    - /var/tmp
+
+- name: Set Default Umask
+  ansible.builtin.lineinfile:
+    path: /etc/profile.d/set-umask-for-all-users.sh
+    regexp: '^umask'
+    line: "{{umask_mode}}"
 
 - name: Lock Down /run/shm and /dev/shm
   ansible.builtin.shell: |
