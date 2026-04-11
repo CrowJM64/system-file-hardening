@@ -36,13 +36,25 @@
     - /etc/shadow
     - /etc/gshadow
 
-- name: Secure Home Dirs
+- name: Secure Home
   ansible.builtin.file:
     path: "{{ item }}"
-    recurse: yes
-    mode: '600'
+    mode: '755'
   loop:
-    - /home
+    - /home/
+
+- name: Find User Home Dirs
+  ansible.builtin.find:
+    paths: /home/
+    file_type: directory
+  register: home_dirs
+
+- name: Secure User Home Dirs
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    recurse: yes
+    mode: '700'
+  loop: "{{ home_dirs.files }}"
 
 - name: Ensure TMP Sticky Bit Enabled
   ansible.builtin.file:
@@ -52,10 +64,15 @@
     - /tmp
     - /var/tmp
 
+- name: Create Umask Settings File
+  ansible.builtin.file:
+    path: /etc/profile.d/set-umask-for-all-users.sh
+    state: touch
+    mode: '0644'
+
 - name: Set Default Umask
   ansible.builtin.lineinfile:
     path: /etc/profile.d/set-umask-for-all-users.sh
-    regexp: '^umask'
     line: "{{umask_mode}}"
 
 - name: Lock Down /run/shm and /dev/shm
@@ -65,15 +82,22 @@
 
 ########## AuditD Installation ##########
 - name: AuditD Installation (RedHat)
-  ansible.builtin.yum:
-    name: auditd
+  ansible.builtin.package:
+    name: audit
     state: latest
   when: ansible_os_family == "RedHat"
-  notify: restart audit
+  register: auditd_installed
 
 - name: AuditD Installation (Debian)
-  ansible.builtin.dnf:
+  ansible.builtin.package:
     name: auditd
     state: latest
   when: ansible_os_family == "Debian"
-  notify: restart auditd
+  register: auditd_installed
+
+- name: Ensure AuditD is Running
+  ansible.builtin.service:
+    name: auditd
+    state: started
+    enabled: yes
+  when: auditd_installed is succeeded
