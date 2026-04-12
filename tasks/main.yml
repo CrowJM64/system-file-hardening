@@ -64,21 +64,38 @@
     - /tmp
     - /var/tmp
 
+- name: Check if Umask Settings File Already Exists
+  stat:
+    path: /etc/profile.d/set-umask-for-all-users.sh
+  register: umask_bash_info
+
 - name: Create Umask Settings File
   ansible.builtin.file:
     path: /etc/profile.d/set-umask-for-all-users.sh
     state: touch
     mode: '0644'
+  when: not umask_bash_info.stat.exists
+  register: umask_bash_created
 
 - name: Set Default Umask
   ansible.builtin.lineinfile:
     path: /etc/profile.d/set-umask-for-all-users.sh
     line: "{{umask_mode}}"
+  when: umask_bash_created is changed
 
-- name: Lock Down /run/shm and /dev/shm
-  ansible.builtin.shell: |
-    echo "tmpfs /run/shm tmpfs defaults,noexec,nosuid 0 0" | sudo tee -a /etc/fstab
-    echo "tmpfs /dev/shm tmpfs defaults,noexec,nosuid,nodev 0 0" | sudo tee -a /etc/fstab
+- name: Lock Down /run/shm
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^#?tmpfs /run/shm tmpfs'
+    line: 'tmpfs /run/shm tmpfs defaults,noexec,nosuid 0 0'
+    backup: yes
+
+- name: Lock Down /dev/shm
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^#?tmpfs /dev/shm tmpfs'
+    line: 'tmpfs /dev/shm tmpfs defaults,noexec,nosuid,nodev 0 0'
+    backup: yes
 
 ########## AuditD Installation ##########
 - name: AuditD Installation (RedHat)
