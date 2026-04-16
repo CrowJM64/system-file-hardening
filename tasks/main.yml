@@ -12,6 +12,18 @@
     - /etc/cron.daily
     - /etc/cron.hourly
 
+- name: Check /etc/crontab exists
+  stat:
+    path: /etc/crontab
+  register: etc_crontab_info
+
+- name: Create /etc/crontab
+  ansible.builtin.file:
+    path: /etc/crontab
+    state: touch
+    mode: '0600'
+  when: not etc_crontab_info.stat.exists
+
 - name: Secure Crontab and SSHD Config
   ansible.builtin.file:
     path: "{{ item }}"

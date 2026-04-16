@@ -3,35 +3,41 @@
 
 ## Overview
 
-This Ansible role automates hardening of the following system files:
+This Ansible role automates hardening of the following system files and directories:
 ```yaml
-- /boot
-- /etc/cron.monthly
-- /etc/cron.weekly
-- /etc/cron.daily
-- /etc/cron.hourly
-- /etc/crontab
-- /etc/ssh/sshd_config
-- /etc/passwd
-- /etc/group
-- /etc/shadow
-- /etc/gshadow
-- /run/shm
-- /dev/shm
+- /boot (700)
+- /etc/cron.monthly (700)
+- /etc/cron.weekly (700)
+- /etc/cron.daily (700)
+- /etc/cron.hourly (700)
+- /etc/crontab (600)
+- /etc/ssh/sshd_config (600)
+- /etc/passwd (644)
+- /etc/group (644)
+- /etc/shadow (640)
+- /etc/gshadow (640)
+- /home (755)
+- /home/* (700)
+- /tmp (1777 - Sticky Bit) 
+- /var/tmp (1777 - Sticky Bit)
+- /run/shm (tmpfs defaults,noexec,nosuid)
+- /dev/shm (tmpfs defaults,noexec,nosuid,nodev)
 ```
 
 ## Supported Platforms and Derivatives
-The files changed should exist on every Redhat and Debian Distro. Below are the explicitly supported Distros.
+The files changed should exist on every Redhat and Debian Distro. Below are the explicitly tested Distros.
 ```yaml
 # RedHat
-EL - All Versions
-Fedora - All Versions
-Rocky - All Versions
-AlmaLinux - All Versions
+Rocky 10/9
+CentOS 10/9
+Fedora 43/42
+Oracle 10
 
 # Debian
-Debian - All Versions
-Ubuntu - All Versions
+Ubuntu 24.04/22.04
+Debian 13
+Alma 10
+Mint 22
 ```
 
 ## Example Playbook
