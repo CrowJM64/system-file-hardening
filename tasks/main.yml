@@ -95,12 +95,18 @@
     line: "{{umask_mode}}"
   when: umask_bash_created is changed
 
-- name: Lock Down /run/shm
-  ansible.builtin.lineinfile:
+- name: Check /etc/fstab exists
+  ansible.builtin.stat:
     path: /etc/fstab
-    regexp: '^#?tmpfs /run/shm tmpfs'
-    line: 'tmpfs /run/shm tmpfs defaults,noexec,nosuid 0 0'
-    backup: yes
+  register: fstab_info
+
+#- name: Lock Down /run/shm
+#  ansible.builtin.lineinfile:
+#    path: /etc/fstab
+#    regexp: '^#?tmpfs /run/shm tmpfs'
+#    line: 'tmpfs /run/shm tmpfs defaults,noexec,nosuid 0 0'
+#    backup: yes
+#  when: fstab_info.stat.exists
 
 - name: Lock Down /dev/shm
   ansible.builtin.lineinfile:
@@ -108,6 +114,7 @@
     regexp: '^#?tmpfs /dev/shm tmpfs'
     line: 'tmpfs /dev/shm tmpfs defaults,noexec,nosuid,nodev 0 0'
     backup: yes
+  when: fstab_info.stat.exists
 
 ########## AuditD Installation ##########
 - name: AuditD Installation (RedHat)

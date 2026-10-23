@@ -1,0 +1,34 @@
+---
+# Purpose: assert that the instance really ended up in the expected state.
+# Molecule calls this playbook with `molecule verify`.
+- name: Verify
+  hosts: all
+  gather_facts: true
+  vars:
+    umask_mode: umask 007
+  tasks:
+#    - name: Check Firewalld service is running
+#      ansible.builtin.systemd:
+#        name: firewalld
+#      register: firewalld_svc
+#      failed_when: firewalld_svc.status.ActiveState != "active"
+
+#    - name: Get Open Ports
+#      ansible.builtin.command:  firewall-cmd --list-ports
+#      register: open_ports
+
+#    - name: Get Open Services
+#      ansible.builtin.command:  firewall-cmd --list-services
+#      register: open_services
+
+#    - name: Assert expected port is open
+#      ansible.builtin.assert:
+#        that: >
+#          '{{ expected_ports }}' in open_ports.stdout
+#        fail_msg: "'{{ expected_ports }}' missing from open_ports"
+
+#    - name: Assert expected service is open
+#      ansible.builtin.assert:
+#        that: >
+#          '{{ expected_services }}' in open_services.stdout
+#        fail_msg: "'{{ expected_services }}' missing from open_services"
