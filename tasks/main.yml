@@ -40,6 +40,19 @@
     - /etc/passwd
     - /etc/group
 
+# Mostly an OpenSuse issue, seemingly not shipping with it by default, but with gpasswd using it when it does exist.
+- name: Check if /etc/gshadow exists.
+  stat:
+    path: /etc/gshadow
+  register: gshadow_info
+
+- name: Create gshadow file
+  ansible.builtin.file:
+    path: /etc/gshadow
+    state: touch
+    mode: '0640'
+  when: not gshadow_info.stat.exists
+
 - name: Secure Shadow Files
   ansible.builtin.file:
     path: "{{ item }}"
@@ -111,24 +124,48 @@
 - name: Lock Down /dev/shm
   ansible.builtin.lineinfile:
     path: /etc/fstab
-    regexp: '^#?tmpfs /dev/shm tmpfs'
+    regexp: '^\s*#?\s*\S+\s+/dev/shm\s'
     line: 'tmpfs /dev/shm tmpfs defaults,noexec,nosuid,nodev 0 0'
     backup: yes
   when: fstab_info.stat.exists
 
 ########## AuditD Installation ##########
-- name: AuditD Installation (RedHat)
+- name: Install AuditD (RedHat)
   ansible.builtin.package:
     name: audit
     state: latest
-  when: ansible_os_family == "RedHat"
+  when:
+    - ansible_facts['os_family'] == "RedHat"
+    - ansible_facts['distribution'] != "Fedora"
   register: auditd_installed
 
-- name: AuditD Installation (Debian)
+- name: Install AuditD (Debian)
   ansible.builtin.package:
     name: auditd
     state: latest
-  when: ansible_os_family == "Debian"
+  when: ansible_facts['os_family'] == "Debian"
+  register: auditd_installed
+
+- name: Install AuditD (Fedora)
+  ansible.builtin.command: dnf install -y auditd
+  when: ansible_facts['distribution'] == "Fedora"
+  register: auditd_installed
+
+- name: Install AuditD (Suse)
+  community.general.zypper:
+    name:
+      - audit
+    state: present
+  when: ansible_facts['os_family'] == "Suse"
+  register: auditd_installed
+
+- name: Install OpenSSH Server and sudo (Other)
+  ansible.builtin.package:
+    name:
+      - auditd
+    state: present
+  when:
+    - ansible_facts['os_family'] not in ["RedHat", "Debian", "Suse"]
   register: auditd_installed
 
 - name: Ensure AuditD is Running
@@ -136,4 +173,6 @@
     name: auditd
     state: started
     enabled: yes
-  when: auditd_installed is succeeded
+  when: 
+    - auditd_installed is succeeded
+    - ansible_facts['virtualization_type'] not in ["docker", "podman", "container", "containerd", "lxc"]
