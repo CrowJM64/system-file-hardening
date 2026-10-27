@@ -90,7 +90,7 @@
     - /var/tmp
 
 - name: Check if Umask Settings File Already Exists
-  stat:
+  ansible.builtin.stat:
     path: /etc/profile.d/set-umask-for-all-users.sh
   register: umask_bash_info
 

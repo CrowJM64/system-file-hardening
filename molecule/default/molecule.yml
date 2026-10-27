@@ -73,7 +73,7 @@ platforms:
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
 
-# Other
+# Oracle
   - name: oraclelinux10
     image: docker.io/library/oraclelinux:10
     pre_build_image: true
@@ -90,6 +90,7 @@ platforms:
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
 
+# Amazon
   - name: amazonlinux2027
     image: docker.io/amazonlinux:2027
     pre_build_image: false
@@ -108,6 +109,7 @@ platforms:
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
 
+# Opensuse
   - name: opensuseleap15
     image: docker.io/geerlingguy/docker-opensuseleap15-ansible:latest
     pre_build_image: false
