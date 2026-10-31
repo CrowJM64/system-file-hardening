@@ -28,16 +28,17 @@ This Ansible role automates hardening of the following system files and director
 The files changed should exist on every Redhat and Debian Distro. Below are the explicitly tested Distros.
 ```yaml
 # RedHat
-Rocky 10/9
-CentOS 10/9
-Fedora 43/42
-Oracle 10
+Rocky 10,9
+Fedora 44,43
+Oracle 10,9
 
 # Debian
-Ubuntu 24.04/22.04
-Debian 13
-Alma 10
-Mint 22
+Ubuntu 26.04,24.04
+Debian 13,12
+
+# Other
+AmazonLinux 2027,2023
+OpenSuse Leap 15
 ```
 
 ## Example Playbook
