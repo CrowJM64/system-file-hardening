@@ -5,6 +5,11 @@
   hosts: all
   gather_facts: true
   tasks:
+    - name: Install python3-dnf (Fedora) # Pre-req for Fedora DNF Tasks
+      ansible.builtin.command: dnf -y install python3-dnf
+      changed_when: false
+      when: ansible_facts['distribution'] == "Fedora"
+
     - name: Install OpenSSH Server (RHEL)
       ansible.builtin.dnf:
         name:
@@ -12,14 +17,8 @@
         state: present
       when:
         - ansible_facts['os_family'] == "RedHat"
-        - ansible_facts['distribution'] != "Fedora"
 
-    - name: Install OpenSSH Server (Fedora)
-      ansible.builtin.command: dnf -y install openssh-server sudo
-      changed_when: false
-      when: ansible_facts['distribution'] == "Fedora"
-
-    - name: Install OpenSSH Server and sudo (Debian)
+    - name: Install OpenSSH Server (Debian)
       ansible.builtin.apt:
         name:
           - openssh-server

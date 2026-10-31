@@ -4,7 +4,7 @@
   ansible.builtin.file:
     path: "{{ item }}"
     recurse: yes
-    mode: '700'
+    mode: '0700'
   loop:
     - /boot
     - /etc/cron.monthly
@@ -27,7 +27,7 @@
 - name: Secure Crontab and SSHD Config
   ansible.builtin.file:
     path: "{{ item }}"
-    mode: '600'
+    mode: '0600'
   loop:
     - /etc/crontab
     - /etc/ssh/sshd_config
@@ -35,7 +35,7 @@
 - name: Secure Passwd and Group Files
   ansible.builtin.file:
     path: "{{ item }}"
-    mode: '644'
+    mode: '0644'
   loop:
     - /etc/passwd
     - /etc/group
@@ -56,7 +56,7 @@
 - name: Secure Shadow Files
   ansible.builtin.file:
     path: "{{ item }}"
-    mode: '640'
+    mode: '0640'
   loop:
     - /etc/shadow
     - /etc/gshadow
@@ -64,7 +64,7 @@
 - name: Secure Home
   ansible.builtin.file:
     path: "{{ item }}"
-    mode: '755'
+    mode: '0755'
   loop:
     - /home/
 
@@ -78,7 +78,7 @@
   ansible.builtin.file:
     path: "{{ item.path }}"
     recurse: yes
-    mode: '700'
+    mode: '0700'
   loop: "{{ home_dirs.files }}"
 
 - name: Ensure TMP Sticky Bit Enabled
@@ -108,18 +108,10 @@
     line: "{{umask_mode}}"
   when: umask_bash_created is changed
 
-- name: Check /etc/fstab exists
+- name: Check /etc/fstab exists # For Molecule, certain containers do not ship with fstab and therefore fail.
   ansible.builtin.stat:
     path: /etc/fstab
   register: fstab_info
-
-#- name: Lock Down /run/shm
-#  ansible.builtin.lineinfile:
-#    path: /etc/fstab
-#    regexp: '^#?tmpfs /run/shm tmpfs'
-#    line: 'tmpfs /run/shm tmpfs defaults,noexec,nosuid 0 0'
-#    backup: yes
-#  when: fstab_info.stat.exists
 
 - name: Lock Down /dev/shm
   ansible.builtin.lineinfile:
@@ -130,13 +122,17 @@
   when: fstab_info.stat.exists
 
 ########## AuditD Installation ##########
+- name: Install python3-dnf (Fedora) # Pre-req for Fedora DNF Tasks
+  ansible.builtin.command: dnf -y install python3-dnf
+  changed_when: false
+  when: ansible_facts['distribution'] == "Fedora"
+
 - name: Install AuditD (RedHat)
   ansible.builtin.package:
     name: audit
     state: latest
   when:
-    - ansible_facts['os_family'] == "RedHat"
-    - ansible_facts['distribution'] != "Fedora"
+    - ansible_facts['os_family'] in ["RedHat", "Suse"]
   register: auditd_installed
 
 - name: Install AuditD (Debian)
@@ -144,19 +140,6 @@
     name: auditd
     state: latest
   when: ansible_facts['os_family'] == "Debian"
-  register: auditd_installed
-
-- name: Install AuditD (Fedora)
-  ansible.builtin.command: dnf install -y auditd
-  when: ansible_facts['distribution'] == "Fedora"
-  register: auditd_installed
-
-- name: Install AuditD (Suse)
-  community.general.zypper:
-    name:
-      - audit
-    state: present
-  when: ansible_facts['os_family'] == "Suse"
   register: auditd_installed
 
 - name: Install OpenSSH Server and sudo (Other)
@@ -175,4 +158,4 @@
     enabled: yes
   when: 
     - auditd_installed is succeeded
-    - ansible_facts['virtualization_type'] not in ["docker", "podman", "container", "containerd", "lxc"]
+    - ansible_facts['virtualization_type'] not in ["docker", "podman", "container", "containerd", "lxc"] # AuditD cannot run on containerized linux images.

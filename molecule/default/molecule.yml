@@ -4,6 +4,11 @@ dependency:
   options:
     requirements-file: requirements.yml
 
+# If you run into issues running molecule test, you may need to increase max inotify instances and watches.
+#echo "fs.inotify.max_user_instances=512" | sudo tee -a /etc/sysctl.conf
+#echo "fs.inotify.max_user_watches=524288" | sudo tee -a /etc/sysctl.conf
+#sudo sysctl -p
+
 driver: {name: containers}
 
 platforms:
@@ -12,9 +17,9 @@ platforms:
     image: docker.io/geerlingguy/docker-rockylinux10-ansible:latest # Must use Fully Qualified name of Image and domain to pull from to be compatible with Podman.
     pre_build_image: true
     command: /sbin/init
-    privileged: true
+    privileged: true # Needed for systemd within containers.
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw # Needed for systemd within containers.
 
   - name: rockylinux9
     image: docker.io/geerlingguy/docker-rockylinux9-ansible:latest
@@ -94,7 +99,7 @@ platforms:
   - name: amazonlinux2027
     image: docker.io/amazonlinux:2027
     pre_build_image: false
-    dockerfile: Dockerfile.j2
+    dockerfile: Dockerfile.j2 # Needed for AmazonLinux and OpenSuse emulation within containers.
     command: /sbin/init
     privileged: true
     volumes:
@@ -123,24 +128,46 @@ ansible:
   cfg:
     defaults:
       host_key_checking: false
+      verbosity: 1
+    ssh_connection:
+      pipelining: true
   env:
     ANSIBLE_FORCE_COLOR: "1"
+    ANSIBLE_LOAD_CALLBACK_PLUGINS: "1"
     ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
+
   executor:
     backend: ansible-playbook
     args:
       ansible_playbook:
         - --diff
+#        - --force-handlers
+      ansible_navigator:
+        - --mode stdout
+        - --pull-policy missing
+        - --execution-environment-image ghcr.io/ansible/community-ansible-dev-tools:latest
+
+  playbooks:
+    create: create.yml
+    converge: converge.yml
+    destroy: destroy.yml
+    cleanup: cleanup.yml
+    prepare: prepare.yml
+    side_effect: side_effect.yml
+    verify: verify.yml
 
 scenario:
   name: default
   test_sequence:
     - dependency
+    - cleanup
     - destroy
     - syntax
     - create
     - prepare
     - converge
     - idempotence
+    - side_effect
     - verify
+    - cleanup
     - destroy

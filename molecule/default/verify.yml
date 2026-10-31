@@ -7,28 +7,121 @@
   vars:
     umask_mode: umask 007
   tasks:
-#    - name: Check Firewalld service is running
-#      ansible.builtin.systemd:
-#        name: firewalld
-#      register: firewalld_svc
-#      failed_when: firewalld_svc.status.ActiveState != "active"
+    - name: Check Cron Monthly permissions
+      ansible.builtin.stat:
+        path: '/etc/cron.monthly'
+      register: cron_monthly
+      failed_when: cron_monthly.stat.mode != "0700"
 
-#    - name: Get Open Ports
-#      ansible.builtin.command:  firewall-cmd --list-ports
-#      register: open_ports
+    - name: Check Cron Weekly permissions
+      ansible.builtin.stat:
+        path: '/etc/cron.weekly'
+      register: cron_weekly
+      failed_when: cron_weekly.stat.mode != "0700"
 
-#    - name: Get Open Services
-#      ansible.builtin.command:  firewall-cmd --list-services
-#      register: open_services
+    - name: Check Cron Daily permissions
+      ansible.builtin.stat:
+        path: '/etc/cron.daily'
+      register: cron_daily
+      failed_when: cron_daily.stat.mode != "0700"
 
-#    - name: Assert expected port is open
-#      ansible.builtin.assert:
-#        that: >
-#          '{{ expected_ports }}' in open_ports.stdout
-#        fail_msg: "'{{ expected_ports }}' missing from open_ports"
+    - name: Check Cron Hourly permissions
+      ansible.builtin.stat:
+        path: '/etc/cron.hourly'
+      register: cron_hourly
+      failed_when: cron_hourly.stat.mode != "0700"
 
-#    - name: Assert expected service is open
-#      ansible.builtin.assert:
-#        that: >
-#          '{{ expected_services }}' in open_services.stdout
-#        fail_msg: "'{{ expected_services }}' missing from open_services"
+    - name: Check boot mount permissions
+      ansible.builtin.stat:
+        path: '/boot'
+      register: boot
+      failed_when: boot.stat.mode != "0700"
+
+    - name: Check Crontab permissions
+      ansible.builtin.stat:
+        path: '/etc/crontab'
+      register: crontab
+      failed_when: crontab.stat.mode != "0600"
+
+    - name: Check sshd_config permissions
+      ansible.builtin.stat:
+        path: '/etc/ssh/sshd_config'
+      register: sshd_config
+      failed_when: sshd_config.stat.mode != "0600"
+
+    - name: Check passwd file permissions
+      ansible.builtin.stat:
+        path: '/etc/passwd'
+      register: passwd
+      failed_when: passwd.stat.mode != "0644"
+
+    - name: Check group file permissions
+      ansible.builtin.stat:
+        path: '/etc/group'
+      register: group
+      failed_when: group.stat.mode != "0644"
+
+    - name: Check shadow file permissions
+      ansible.builtin.stat:
+        path: '/etc/shadow'
+      register: shadow
+      failed_when: shadow.stat.mode != "0640"
+
+    - name: Check gshadow file permissions
+      ansible.builtin.stat:
+        path: '/etc/gshadow'
+      register: gshadow
+      failed_when: gshadow.stat.mode != "0640"
+
+    - name: Check home permissions
+      ansible.builtin.stat:
+        path: '/home'
+      register: home
+      failed_when: home.stat.mode != "0755"
+
+    - name: Check tmp permissions
+      ansible.builtin.stat:
+        path: '/tmp'
+      register: tmp
+      failed_when: tmp.stat.mode != "1777"
+
+    - name: Check var tmp permissions
+      ansible.builtin.stat:
+        path: '/var/tmp'
+      register: var_tmp
+      failed_when: var_tmp.stat.mode != "1777"
+
+    - name: Check umask permissions
+      ansible.builtin.stat:
+        path: '/etc/profile.d/set-umask-for-all-users.sh'
+      register: umask
+      failed_when: umask.stat.mode != "0644"
+
+    - name: Check all permissions correctly set
+      ansible.builtin.assert:
+        that:
+          - cron_monthly.stat.mode == "0700"
+          - cron_weekly.stat.mode == "0700"
+          - cron_daily.stat.mode == "0700"
+          - cron_hourly.stat.mode == "0700"
+          - boot.stat.mode == "0700"
+          - crontab.stat.mode == "0600"
+          - sshd_config.stat.mode == "0600"
+          - passwd.stat.mode == "0644"
+          - group.stat.mode == "0644"
+          - shadow.stat.mode == "0640"
+          - gshadow.stat.mode == "0640"
+          - home.stat.mode == "0755"
+          - tmp.stat.mode == "1777"
+          - var_tmp.stat.mode == "1777"
+          - umask.stat.mode == "0644"
+        success_msg: 'All files have correct permissions.'
+        fail_msg: 'Some file permissions are incorrect'
+
+    - name: Check AuditD service is running
+      ansible.builtin.systemd:
+        name: auditd
+      register: auditd_svc
+      failed_when: auditd_svc.status.ActiveState != "active"
+      when: 
+        - ansible_facts['virtualization_type'] not in ["docker", "podman", "container", "containerd", "lxc"] # AuditD cannot run on containerized linux images.
